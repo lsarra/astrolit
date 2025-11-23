@@ -85,18 +85,17 @@ def get_sparcl_client():
     """
     try:
         return SparclClient()
-    except sparcl_ex.ServerConnectionError as e:
+    except sparcl_ex.ServerConnectionError:
         st.warning(
             "⚠️ Unable to connect to SPARCL server for spectrum data. "
             "The app will still work, but spectra will not be available. "
-            f"Error: {str(e)}"
+            "Please check your internet connection or try again later."
         )
         return None
-    except Exception as e:
+    except Exception:
         st.warning(
-            "⚠️ Unexpected error connecting to SPARCL server. "
-            "The app will still work, but spectra will not be available. "
-            f"Error: {str(e)}"
+            "⚠️ An error occurred while connecting to the SPARCL server. "
+            "The app will still work, but spectra will not be available."
         )
         return None
 

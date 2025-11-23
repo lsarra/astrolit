@@ -192,7 +192,6 @@ def get_spectrum_from_targets(client: SparclClient, targetids: list) -> np.ndarr
     """
     if client is None:
         return None
-    
     object_id = client.find(
         outfields=["sparcl_id"], constraints={"targetid": targetids}
     )
