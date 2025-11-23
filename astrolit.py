@@ -7,6 +7,7 @@ import os
 import streamlit as st
 import streamlit_nested_layout  # enable nested cols
 from sparcl.client import SparclClient
+import sparcl.exceptions as sparcl_ex
 
 # from debug import compare_snapshots, init_tracking_object
 from astro_utils import (
@@ -77,7 +78,27 @@ def get_clip_embeddings(CLIP_EMBEDDINGS_PATH):
 
 @st.cache_resource
 def get_sparcl_client():
-    return SparclClient()
+    """
+    Initialize SparclClient with error handling.
+    Returns None if connection fails, allowing the app to still function
+    without spectrum data.
+    """
+    try:
+        return SparclClient()
+    except sparcl_ex.ServerConnectionError as e:
+        st.warning(
+            "⚠️ Unable to connect to SPARCL server for spectrum data. "
+            "The app will still work, but spectra will not be available. "
+            f"Error: {str(e)}"
+        )
+        return None
+    except Exception as e:
+        st.warning(
+            "⚠️ Unexpected error connecting to SPARCL server. "
+            "The app will still work, but spectra will not be available. "
+            f"Error: {str(e)}"
+        )
+        return None
 
 
 url = "https://drive.google.com/uc?id=1XmUlsb1QjNlbTqJa5ohOOvEmym_Sszb5"
@@ -296,12 +317,15 @@ def show_results(
         sparcl_client, targetids=[input_object["targetid"].tolist()]
     )
     # add spectrum to grid
-    fig = plt.figure()
-    plt.plot(spectrum_raw.squeeze()[::20])
-    query_container.pyplot(
-        fig,
-        use_container_width="always",
-    )
+    if spectrum_raw is not None:
+        fig = plt.figure()
+        plt.plot(spectrum_raw.squeeze()[::20])
+        query_container.pyplot(
+            fig,
+            use_container_width="always",
+        )
+    else:
+        query_container.info("Spectrum data unavailable")
 
     # CLIP Results
     page_cols[1].subheader("Most similar objects")
@@ -332,13 +356,16 @@ def show_results(
                 # use_column_width="always",
             )
             # add spectrum to grid
-            spectrum = result_spectra[iimg]
-            fig = plt.figure()
-            plt.plot(spectrum.squeeze()[::20])
-            current_spectrum.pyplot(
-                fig,
-                #  use_container_width=True
-            )
+            if result_spectra is not None:
+                spectrum = result_spectra[iimg]
+                fig = plt.figure()
+                plt.plot(spectrum.squeeze()[::20])
+                current_spectrum.pyplot(
+                    fig,
+                    #  use_container_width=True
+                )
+            else:
+                current_spectrum.info("Spectrum unavailable")
 
             current_container.progress(
                 value=float(result_idx["score"][iimg]),
